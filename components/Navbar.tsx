@@ -1,0 +1,200 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import type { Profile } from '@/types/database';
+
+interface NavbarProps {
+  profile: Profile | null;
+}
+
+export default function Navbar({ profile }: NavbarProps) {
+  const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
+  const isAdmin = profile?.role === 'admin';
+
+  return (
+    <nav className="bg-white shadow">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <Link
+              href="/dashboard"
+              className="flex items-center px-2 py-2 text-gray-900 hover:text-blue-600 transition-colors"
+            >
+              <span className="text-2xl">🎵</span>
+              <span className="ml-2 text-xl font-bold">みどり楽器</span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-4">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+              >
+                📊 ダッシュボード
+              </Link>
+              <Link
+                href="/inventory/bulk-register"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+              >
+                📦 一括登録
+              </Link>
+              <Link
+                href="/inventory/add"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+              >
+                ✍️ 手動入力
+              </Link>
+              <Link
+                href="/inventory"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+              >
+                📋 商品一覧
+              </Link>
+              {isAdmin && (
+                <>
+                  <Link
+                    href="/sales"
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                  >
+                    💰 売上管理
+                  </Link>
+                  <Link
+                    href="/invoices"
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                  >
+                    📄 請求書
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center">
+            <div className="hidden sm:block">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-700">
+                  {profile?.full_name || profile?.email}
+                  {isAdmin && (
+                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      管理者
+                    </span>
+                  )}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                >
+                  ログアウト
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="sm:hidden">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+              >
+                <span className="sr-only">メニューを開く</span>
+                {mobileMenuOpen ? (
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden">
+          <div className="pt-2 pb-3 space-y-1">
+            <Link
+              href="/dashboard"
+              className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              📊 ダッシュボード
+            </Link>
+            <Link
+              href="/inventory/bulk-register"
+              className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              📦 一括登録
+            </Link>
+            <Link
+              href="/inventory/add"
+              className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              ✍️ 手動入力
+            </Link>
+            <Link
+              href="/inventory"
+              className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              📋 商品一覧
+            </Link>
+            {isAdmin && (
+              <>
+                <Link
+                  href="/sales"
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  💰 売上管理
+                </Link>
+                <Link
+                  href="/invoices"
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  📄 請求書
+                </Link>
+              </>
+            )}
+          </div>
+          <div className="pt-4 pb-3 border-t border-gray-200">
+            <div className="px-4">
+              <div className="text-base font-medium text-gray-800">
+                {profile?.full_name || profile?.email}
+              </div>
+              {isAdmin && (
+                <div className="mt-1 text-sm font-medium text-blue-600">
+                  管理者
+                </div>
+              )}
+            </div>
+            <div className="mt-3 px-4">
+              <button
+                onClick={handleLogout}
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                ログアウト
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}

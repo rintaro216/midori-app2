@@ -1,0 +1,416 @@
+'use client';
+
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase-client';
+import { useRouter } from 'next/navigation';
+import type { InventoryStatus, InventoryCondition } from '@/types/database';
+
+export default function AddInventoryPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  // フォーム状態
+  const [formData, setFormData] = useState({
+    category: '',
+    product_name: '',
+    manufacturer: '',
+    model_number: '',
+    color: '',
+    serial_number: '',
+    retail_price: '',
+    purchase_price: '',
+    purchase_discount_rate: '',
+    purchase_date: '',
+    supplier_name: '',
+    status: 'available' as InventoryStatus,
+    condition: 'new' as InventoryCondition | '',
+    condition_notes: '',
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      // ログインユーザー取得
+      const {
+        data: { user },
+      } = const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error('ログインしてください');
+      }
+
+      // データベースに登録
+      const { error: insertError } = await supabase.from('inventory').insert([
+        {
+          category: formData.category,
+          product_name: formData.product_name,
+          manufacturer: formData.manufacturer || null,
+          model_number: formData.model_number || null,
+          color: formData.color || null,
+          serial_number: formData.serial_number || null,
+          retail_price: formData.retail_price ? parseFloat(formData.retail_price) : null,
+          purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
+          purchase_discount_rate: formData.purchase_discount_rate
+            ? parseFloat(formData.purchase_discount_rate)
+            : null,
+          purchase_date: formData.purchase_date || null,
+          supplier_name: formData.supplier_name || null,
+          status: formData.status,
+          condition: formData.condition || null,
+          condition_notes: formData.condition_notes || null,
+          created_by: user.id,
+        },
+      ]);
+
+      if (insertError) throw insertError;
+
+      setSuccess(true);
+
+      // 2秒後に一覧画面へ
+      setTimeout(() => {
+        router.push('/inventory');
+      }, 2000);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('商品の登録に失敗しました');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 楽器専用のカラー選択肢
+  const instrumentColors = [
+    'ヴィンテージサンバースト',
+    'ナチュラル',
+    'ブラック',
+    'ホワイト',
+    'チェリーサンバースト',
+    'メタリックブルー',
+    'メタリックレッド',
+    'その他',
+  ];
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="text-6xl mb-4">✅</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">登録完了！</h2>
+          <p className="text-gray-600">商品を登録しました</p>
+          <p className="text-sm text-gray-500 mt-4">
+            自動的に商品一覧へ移動します...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        {/* ヘッダー */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.back()}
+            className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-medium mb-4"
+          >
+            ← 戻る
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">✍️ 手動入力</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            商品情報を入力して登録
+          </p>
+        </div>
+
+        {/* フォーム */}
+        <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-6">
+          {/* エラーメッセージ */}
+          {error && (
+            <div className="rounded-md bg-red-50 p-4">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          {/* 種類（必須） */}
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              種類 <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="category"
+              name="category"
+              required
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">選択してください</option>
+              <option value="エレキギター">エレキギター</option>
+              <option value="アコースティックギター">アコースティックギター</option>
+              <option value="ベース">ベース</option>
+              <option value="アンプ">アンプ</option>
+              <option value="エフェクター">エフェクター</option>
+              <option value="弦">弦</option>
+              <option value="ピック">ピック</option>
+              <option value="ケーブル">ケーブル</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+
+          {/* 商品名（必須） */}
+          <div>
+            <label htmlFor="product_name" className="block text-sm font-medium text-gray-700 mb-2">
+              商品名 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="product_name"
+              name="product_name"
+              required
+              value={formData.product_name}
+              onChange={handleChange}
+              placeholder="例: ST-62"
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* メーカー */}
+          <div>
+            <label htmlFor="manufacturer" className="block text-sm font-medium text-gray-700 mb-2">
+              メーカー
+            </label>
+            <input
+              type="text"
+              id="manufacturer"
+              name="manufacturer"
+              value={formData.manufacturer}
+              onChange={handleChange}
+              placeholder="例: フェンダー"
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* 品番 */}
+          <div>
+            <label htmlFor="model_number" className="block text-sm font-medium text-gray-700 mb-2">
+              品番
+            </label>
+            <input
+              type="text"
+              id="model_number"
+              name="model_number"
+              value={formData.model_number}
+              onChange={handleChange}
+              placeholder="例: ST62-VS"
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* カラー */}
+          <div>
+            <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-2">
+              カラー
+            </label>
+            <select
+              id="color"
+              name="color"
+              value={formData.color}
+              onChange={handleChange}
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">選択してください</option>
+              {instrumentColors.map((color) => (
+                <option key={color} value={color}>
+                  {color}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* シリアルナンバー */}
+          <div>
+            <label htmlFor="serial_number" className="block text-sm font-medium text-gray-700 mb-2">
+              シリアルナンバー
+            </label>
+            <input
+              type="text"
+              id="serial_number"
+              name="serial_number"
+              value={formData.serial_number}
+              onChange={handleChange}
+              placeholder="例: JD12345678"
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* 価格情報 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="retail_price" className="block text-sm font-medium text-gray-700 mb-2">
+                販売価格（定価）
+              </label>
+              <input
+                type="number"
+                id="retail_price"
+                name="retail_price"
+                value={formData.retail_price}
+                onChange={handleChange}
+                placeholder="例: 100000"
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="purchase_price" className="block text-sm font-medium text-gray-700 mb-2">
+                仕入値段
+              </label>
+              <input
+                type="number"
+                id="purchase_price"
+                name="purchase_price"
+                value={formData.purchase_price}
+                onChange={handleChange}
+                placeholder="例: 80000"
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* 仕入情報 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="purchase_discount_rate" className="block text-sm font-medium text-gray-700 mb-2">
+                掛け率（%）
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                id="purchase_discount_rate"
+                name="purchase_discount_rate"
+                value={formData.purchase_discount_rate}
+                onChange={handleChange}
+                placeholder="例: 80"
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700 mb-2">
+                仕入日
+              </label>
+              <input
+                type="date"
+                id="purchase_date"
+                name="purchase_date"
+                value={formData.purchase_date}
+                onChange={handleChange}
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* 仕入先 */}
+          <div>
+            <label htmlFor="supplier_name" className="block text-sm font-medium text-gray-700 mb-2">
+              仕入先
+            </label>
+            <input
+              type="text"
+              id="supplier_name"
+              name="supplier_name"
+              value={formData.supplier_name}
+              onChange={handleChange}
+              placeholder="例: ヤマハ"
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* ステータス・状態 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                ステータス
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="available">販売中</option>
+                <option value="reserved">取り置き</option>
+                <option value="repair">修理中</option>
+                <option value="display">展示中</option>
+                <option value="sold">売却済み</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-2">
+                状態
+              </label>
+              <select
+                id="condition"
+                name="condition"
+                value={formData.condition}
+                onChange={handleChange}
+                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">選択してください</option>
+                <option value="new">新品</option>
+                <option value="used">中古</option>
+                <option value="display">展示品</option>
+              </select>
+            </div>
+          </div>
+
+          {/* コンディション詳細 */}
+          <div>
+            <label htmlFor="condition_notes" className="block text-sm font-medium text-gray-700 mb-2">
+              コンディション詳細
+            </label>
+            <textarea
+              id="condition_notes"
+              name="condition_notes"
+              rows={3}
+              value={formData.condition_notes}
+              onChange={handleChange}
+              placeholder="例: ボディに小傷あり、動作問題なし"
+              className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* 送信ボタン */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? '登録中...' : '登録する'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
