@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 export default function DisposalCandidatesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
 
   useEffect(() => {
     loadCandidates();
