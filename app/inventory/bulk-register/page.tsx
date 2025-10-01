@@ -10,9 +10,9 @@ export default function BulkRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
-  const [extractedItems, setExtractedItems] = useState([]);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editForm, setEditForm] = useState({});
+  const [extractedItems, setExtractedItems] = useState<any[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
   const [invoiceUrl, setInvoiceUrl] = useState('');
 
   const convertPdfToImage = async (pdfFile) => {
@@ -63,7 +63,7 @@ export default function BulkRegisterPage() {
 
       if (selectedFile.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onloadend = () => setPreview(reader.result);
+        reader.onloadend = () => setPreview(reader.result as string);
         reader.readAsDataURL(selectedFile);
       } else if (selectedFile.type === 'application/pdf') {
         setPreview('pdf');

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase-client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function AddSalePage() {
+function AddSaleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inventoryId = searchParams.get('inventory_id');
@@ -237,5 +237,13 @@ export default function AddSalePage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AddSalePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">読み込み中...</div>}>
+      <AddSaleContent />
+    </Suspense>
   );
 }

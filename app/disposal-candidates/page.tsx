@@ -49,16 +49,16 @@ export default function DisposalCandidatesPage() {
     }
   };
 
-  const getDaysOld = (purchaseDate) => {
+  const getDaysOld = (purchaseDate: string | null) => {
     if (!purchaseDate) return 0;
     const now = new Date();
     const purchase = new Date(purchaseDate);
-    const diffTime = Math.abs(now - purchase);
+    const diffTime = Math.abs(now.getTime() - purchase.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
 
-  const getRecommendation = (item) => {
+  const getRecommendation = (item: any) => {
     const daysOld = getDaysOld(item.purchase_date);
     const isConsumable = item.category?.includes('弦') || item.category?.includes('ピック');
 
