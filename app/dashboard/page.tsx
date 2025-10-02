@@ -324,16 +324,16 @@ export default async function DashboardPage() {
               </Link>
 
               <Link
-                href="/inventory/search"
-                className="block p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all"
+                href="/inventory/csv-import"
+                className="block p-6 bg-white rounded-lg border-2 border-gray-200 hover:border-purple-500 hover:shadow-lg transition-all"
               >
                 <div className="text-center">
-                  <span className="text-4xl mb-2 block">🔍</span>
+                  <span className="text-4xl mb-2 block">📄</span>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    商品検索
+                    CSV一括登録
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    在庫確認
+                    CSVファイル
                   </p>
                 </div>
               </Link>
