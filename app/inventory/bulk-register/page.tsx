@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase-client';
 import { useRouter } from 'next/navigation';
+import AIProductConfirmationTable from '@/components/AIProductConfirmationTable';
 
 export default function BulkRegisterPage() {
   const router = useRouter();
@@ -11,8 +12,6 @@ export default function BulkRegisterPage() {
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
   const [extractedItems, setExtractedItems] = useState<any[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
   const [invoiceUrl, setInvoiceUrl] = useState('');
 
   const convertPdfToImage = async (pdfFile) => {
@@ -35,7 +34,8 @@ export default function BulkRegisterPage() {
       const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const page = await pdf.getPage(1);
 
-      const viewport = page.getViewport({ scale: 1.5 });
+      // 高解像度化: scale を 3.0 に増加 (OCR精度向上のため)
+      const viewport = page.getViewport({ scale: 3.0 });
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       canvas.height = viewport.height;
@@ -45,8 +45,8 @@ export default function BulkRegisterPage() {
 
       return new Promise((resolve) => {
         canvas.toBlob((blob) => {
-          resolve(new File([blob], 'converted.jpg', { type: 'image/jpeg' }));
-        }, 'image/jpeg', 0.85); // JPEG with 85% quality for smaller file size
+          resolve(new File([blob], 'converted.png', { type: 'image/png' }));
+        }, 'image/png'); // PNG形式で無劣化変換 (OCR精度向上)
       });
     } catch (error) {
       console.error('PDF conversion error:', error);
@@ -135,42 +135,6 @@ export default function BulkRegisterPage() {
     }
   };
 
-  const handleEdit = (index) => {
-    setEditingIndex(index);
-    setEditForm({ ...extractedItems[index] });
-  };
-
-  const handleSaveEdit = () => {
-    const newItems = [...extractedItems];
-    newItems[editingIndex] = editForm;
-    setExtractedItems(newItems);
-    setEditingIndex(null);
-    setEditForm({});
-  };
-
-  const handleDeleteItem = (index) => {
-    if (confirm('この商品を削除しますか？')) {
-      const newItems = extractedItems.filter((_, i) => i !== index);
-      setExtractedItems(newItems);
-    }
-  };
-
-  const handleAddNewItem = () => {
-    const newItem = {
-      category: '',
-      product_name: '',
-      manufacturer: '',
-      model_number: '',
-      color: '',
-      retail_price: null,
-      purchase_price: null,
-      purchase_date: new Date().toISOString().split('T')[0],
-      supplier_name: '',
-    };
-    setExtractedItems([...extractedItems, newItem]);
-    setEditingIndex(extractedItems.length);
-    setEditForm(newItem);
-  };
 
   const handleSaveAll = async () => {
     setLoading(true);
@@ -226,16 +190,6 @@ export default function BulkRegisterPage() {
     }
   };
 
-  const getItemStatus = (item) => {
-    const missingFields = [];
-    if (!item.product_name) missingFields.push('商品名');
-    if (!item.category) missingFields.push('カテゴリ');
-    if (!item.purchase_price && !item.retail_price) missingFields.push('価格');
-
-    if (missingFields.length === 0) return { type: 'success', label: '✅ 読取成功', missing: [] };
-    if (missingFields.length <= 2) return { type: 'warning', label: '⚠️ 要確認', missing: missingFields };
-    return { type: 'error', label: '❌ 読取失敗', missing: missingFields };
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 px-4">
@@ -321,16 +275,14 @@ export default function BulkRegisterPage() {
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">ステップ2: 確認・編集</h2>
+            {error && (
+              <div className="mb-4 rounded-md bg-red-50 p-4">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
 
-              {error && (
-                <div className="mb-4 rounded-md bg-red-50 p-4">
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
-              )}
-
-              {extractedItems.length === 0 ? (
+            {extractedItems.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-6">
                 <div className="text-center py-8">
                   <p className="text-gray-600 mb-4">商品が検出されませんでした</p>
                   <button
@@ -340,255 +292,19 @@ export default function BulkRegisterPage() {
                     戻る
                   </button>
                 </div>
-              ) : (
-                <>
-                  <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="text-sm text-blue-900">
-                        <span className="font-semibold">検出された商品: {extractedItems.length}件</span>
-                      </div>
-                      <div className="flex gap-3 text-xs">
-                        <span className="text-green-700">✅ {extractedItems.filter(item => getItemStatus(item).type === 'success').length}件</span>
-                        <span className="text-yellow-700">⚠️ {extractedItems.filter(item => getItemStatus(item).type === 'warning').length}件</span>
-                        <span className="text-red-700">❌ {extractedItems.filter(item => getItemStatus(item).type === 'error').length}件</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <button
-                      onClick={handleAddNewItem}
-                      className="w-full py-3 px-4 border-2 border-dashed border-blue-400 text-blue-600 rounded-lg hover:bg-blue-50 text-base font-medium flex items-center justify-center gap-2"
-                    >
-                      ➕ 商品を手動で追加
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 mb-6 max-h-[500px] overflow-y-auto">
-                    {extractedItems.map((item, index) => {
-                      const status = getItemStatus(item);
-                      return (
-                        <div key={index} className={`border rounded-lg p-4 ${
-                          status.type === 'success' ? 'border-green-200 bg-green-50' :
-                          status.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-                          'border-red-200 bg-red-50'
-                        }`}>
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="font-semibold text-gray-900">商品 {index + 1}</h3>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                status.type === 'success' ? 'bg-green-100 text-green-800' :
-                                status.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {status.label}
-                              </span>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(index)}
-                                className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                              >
-                                編集
-                              </button>
-                              <button
-                                onClick={() => handleDeleteItem(index)}
-                                className="text-sm px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                              >
-                                削除
-                              </button>
-                            </div>
-                          </div>
-
-                          {status.missing.length > 0 && (
-                            <div className="mb-2 text-xs text-gray-600">
-                              未入力: {status.missing.join(', ')}
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            <div className="truncate">
-                              <span className="text-gray-600">商品名:</span> {item.product_name || <span className="text-red-600">未入力</span>}
-                            </div>
-                            <div className="truncate">
-                              <span className="text-gray-600">カテゴリ:</span> {item.category || <span className="text-red-600">未入力</span>}
-                            </div>
-                            <div className="truncate">
-                              <span className="text-gray-600">メーカー:</span> {item.manufacturer || <span className="text-gray-400">-</span>}
-                            </div>
-                            <div className="truncate">
-                              <span className="text-gray-600">型番:</span> {item.model_number || <span className="text-gray-400">-</span>}
-                            </div>
-                            <div className="truncate">
-                              <span className="text-gray-600">仕入価格:</span> {item.purchase_price ? `¥${item.purchase_price.toLocaleString()}` : <span className="text-gray-400">-</span>}
-                            </div>
-                            <div className="truncate">
-                              <span className="text-gray-600">販売価格:</span> {item.retail_price ? `¥${item.retail_price.toLocaleString()}` : <span className="text-gray-400">-</span>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => setStep(1)}
-                      className="flex-1 py-3 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
-                    >
-                      戻る
-                    </button>
-                    <button
-                      onClick={handleSaveAll}
-                      disabled={loading || extractedItems.length === 0}
-                      className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
-                    >
-                      {loading ? '保存中...' : `${extractedItems.length}件を保存`}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+              </div>
+            ) : (
+              <AIProductConfirmationTable
+                products={extractedItems}
+                onProductsChange={setExtractedItems}
+                onRegister={handleSaveAll}
+                onCancel={() => setStep(1)}
+                isRegistering={loading}
+              />
+            )}
           </div>
         )}
 
-        {editingIndex !== null && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setEditingIndex(null)}>
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-xl font-semibold mb-4">商品 {editingIndex + 1} を編集</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">商品名 *</label>
-                  <input
-                    type="text"
-                    value={editForm.product_name || ''}
-                    onChange={(e) => setEditForm({ ...editForm, product_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="例: ST-62"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">カテゴリ *</label>
-                  <select
-                    value={editForm.category || ''}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">選択してください</option>
-                    <option value="エレキギター">エレキギター</option>
-                    <option value="アコースティックギター">アコースティックギター</option>
-                    <option value="ベース">ベース</option>
-                    <option value="アンプ">アンプ</option>
-                    <option value="エフェクター">エフェクター</option>
-                    <option value="弦">弦</option>
-                    <option value="ピック">ピック</option>
-                    <option value="ケーブル">ケーブル</option>
-                    <option value="その他">その他</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">メーカー</label>
-                    <input
-                      type="text"
-                      value={editForm.manufacturer || ''}
-                      onChange={(e) => setEditForm({ ...editForm, manufacturer: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="例: フェンダー"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">型番</label>
-                    <input
-                      type="text"
-                      value={editForm.model_number || ''}
-                      onChange={(e) => setEditForm({ ...editForm, model_number: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="例: ST62-VS"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">色</label>
-                  <input
-                    type="text"
-                    value={editForm.color || ''}
-                    onChange={(e) => setEditForm({ ...editForm, color: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="例: サンバースト"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">仕入価格</label>
-                    <input
-                      type="number"
-                      value={editForm.purchase_price || ''}
-                      onChange={(e) => setEditForm({ ...editForm, purchase_price: parseFloat(e.target.value) || null })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="80000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">販売価格</label>
-                    <input
-                      type="number"
-                      value={editForm.retail_price || ''}
-                      onChange={(e) => setEditForm({ ...editForm, retail_price: parseFloat(e.target.value) || null })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="100000"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">仕入日</label>
-                    <input
-                      type="date"
-                      value={editForm.purchase_date || ''}
-                      onChange={(e) => setEditForm({ ...editForm, purchase_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">仕入先</label>
-                    <input
-                      type="text"
-                      value={editForm.supplier_name || ''}
-                      onChange={(e) => setEditForm({ ...editForm, supplier_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="例: ヤマハ"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex gap-4">
-                <button
-                  onClick={() => setEditingIndex(null)}
-                  className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
-                >
-                  キャンセル
-                </button>
-                <button
-                  onClick={handleSaveEdit}
-                  className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                >
-                  保存
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
