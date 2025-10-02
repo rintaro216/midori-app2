@@ -216,27 +216,27 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* View Mode Toggle (Desktop only) */}
-          <div className="mt-4 hidden md:flex gap-2">
+          {/* View Mode Toggle */}
+          <div className="mt-4 flex gap-2">
             <button
               onClick={() => setViewMode('card')}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-3 md:py-2 rounded-lg text-sm font-medium min-h-[44px] ${
                 viewMode === 'card'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700'
               }`}
             >
-              カード表示
+              📱 カード
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-3 md:py-2 rounded-lg text-sm font-medium min-h-[44px] ${
                 viewMode === 'table'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700'
               }`}
             >
-              テーブル表示
+              📊 テーブル
             </button>
           </div>
         </div>
@@ -248,10 +248,10 @@ export default function InventoryPage() {
           </div>
         ) : (
           <>
-            {/* Card View (Mobile + Desktop) */}
+            {/* Card View */}
             <div
               className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${
-                viewMode === 'table' ? 'hidden md:hidden' : ''
+                viewMode === 'table' ? 'hidden' : 'block'
               }`}
             >
               {filteredItems.map((item) => (
@@ -289,10 +289,10 @@ export default function InventoryPage() {
               ))}
             </div>
 
-            {/* Table View (Desktop only) - Spreadsheet Style */}
+            {/* Table View - Spreadsheet Style */}
             <div
               className={`bg-white rounded-lg shadow overflow-hidden ${
-                viewMode === 'card' ? 'hidden' : 'hidden md:block'
+                viewMode === 'card' ? 'hidden' : 'block'
               }`}
             >
               <div className="overflow-x-auto">
