@@ -12,7 +12,7 @@ export default function InventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
+  const [viewMode, setViewMode] = useState('table'); // 'card' or 'table' (デフォルトはテーブル)
 
   useEffect(() => {
     loadInventory();
@@ -78,26 +78,40 @@ export default function InventoryPage() {
 
   const exportCSV = () => {
     const headers = [
-      '種類',
+      'カテゴリ',
       '商品名',
       'メーカー',
+      '型番',
+      'カラー',
+      'シリアル番号',
+      '状態',
       '販売価格',
       '仕入価格',
       '仕入先',
       '仕入日',
-      '状態',
+      '定価',
+      '掛率(%)',
+      '粗利(%)',
       'ステータス',
+      '備考',
     ];
     const rows = filteredItems.map((item) => [
       item.category || '',
       item.product_name || '',
       item.manufacturer || '',
-      item.retail_price || 0,
-      item.purchase_price || 0,
-      item.supplier_name || '',
-      item.purchase_date || '',
+      item.model_number || '',
+      item.color || '',
+      item.serial_number || '',
       item.condition || '',
+      item.price || '',
+      item.wholesale_price || '',
+      item.supplier || '',
+      item.purchase_date || '',
+      item.list_price || '',
+      item.wholesale_rate || '',
+      item.gross_margin || '',
       item.status || '',
+      item.notes || '',
     ]);
 
     const csvContent = [headers, ...rows]
@@ -275,50 +289,120 @@ export default function InventoryPage() {
               ))}
             </div>
 
-            {/* Table View (Desktop only) */}
+            {/* Table View (Desktop only) - Spreadsheet Style */}
             <div
               className={`bg-white rounded-lg shadow overflow-hidden ${
                 viewMode === 'card' ? 'hidden' : 'hidden md:block'
               }`}
             >
               <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full border-collapse">
+                  <thead className="bg-gray-100 sticky top-0">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        種類
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        カテゴリ
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
                         商品名
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
                         メーカー
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        型番
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        カラー
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        シリアル番号
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        状態
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 border border-gray-300">
                         販売価格
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 border border-gray-300">
+                        仕入価格
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        仕入先
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        仕入日
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 border border-gray-300">
+                        定価
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 border border-gray-300">
+                        掛率(%)
+                      </th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 border border-gray-300">
+                        粗利(%)
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        ステータス
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 border border-gray-300">
+                        備考
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white">
                     {filteredItems.map((item) => (
                       <tr
                         key={item.id}
                         onClick={() => handleRowClick(item)}
                         className="hover:bg-blue-50 cursor-pointer"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.category}
+                        <td className="px-3 py-2 text-xs text-gray-900 border border-gray-300 whitespace-nowrap">
+                          {item.category || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {item.product_name}
+                        <td className="px-3 py-2 text-xs font-medium text-gray-900 border border-gray-300">
+                          {item.product_name || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
                           {item.manufacturer || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.retail_price
-                            ? `¥${item.retail_price.toLocaleString()}`
-                            : '-'}
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.model_number || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.color || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.serial_number || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.condition || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-900 border border-gray-300 text-right whitespace-nowrap">
+                          {item.price ? `¥${item.price.toLocaleString()}` : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-900 border border-gray-300 text-right whitespace-nowrap">
+                          {item.wholesale_price ? `¥${item.wholesale_price.toLocaleString()}` : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.supplier || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.purchase_date || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-900 border border-gray-300 text-right whitespace-nowrap">
+                          {item.list_price ? `¥${item.list_price.toLocaleString()}` : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 text-right whitespace-nowrap">
+                          {item.wholesale_rate ? `${item.wholesale_rate}%` : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 text-right whitespace-nowrap">
+                          {item.gross_margin ? `${item.gross_margin}%` : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 whitespace-nowrap">
+                          {item.status || '-'}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-700 border border-gray-300 max-w-xs truncate">
+                          {item.notes || '-'}
                         </td>
                       </tr>
                     ))}
